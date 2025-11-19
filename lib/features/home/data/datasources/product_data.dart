@@ -1,0 +1,81 @@
+import 'package:ty_cafe/features/home/data/models/product_model.dart';
+
+final List<ProductModel> productList = [
+  ProductModel(
+    id: 'p01',
+    name: "Cappuccino",
+    price: "15.4 ر.ع.",
+    originalPrice: "17.7 ر.ع.",
+    tag: "TOP SALE",
+    tagColor: "blue",
+    image: "assets/images/cappucino.png",
+    rating: "4.9/5",
+    description:
+        "A rich and foamy Cappuccino with perfectly steamed milk and a velvety crema. Delightful aroma and balanced espresso flavour.",
+    category: "Hot Coffee",
+  ),
+  ProductModel(
+    id: 'p02',
+    name: "Americano",
+    price: "15.4 ر.ع.",
+    originalPrice: "17.7 ر.ع.",
+    tag: "9% OFF",
+    tagColor: "red",
+    image: "assets/images/americano.png",
+    rating: "4.7/5",
+    description:
+        "Bold and smooth Americano — espresso diluted with hot water for a clean, mellow cup.",
+    category: "Hot Coffee",
+  ),
+  ProductModel(
+    id: 'p03',
+    name: "Latte",
+    price: "16.2 ر.ع.",
+    originalPrice: "",
+    tag: "",
+    tagColor: "",
+    image: "assets/images/latte.png",
+    rating: "4.8/5",
+    description:
+        "Creamy Latte made with silky steamed milk and a single/double shot of espresso. Perfect for everyday indulgence.",
+    category: "Milk Coffee",
+  ),
+  ProductModel(
+    id: 'p04',
+    name: "Mocha",
+    price: "17.3 ر.ع.",
+    originalPrice: "",
+    tag: "",
+    tagColor: "",
+    image: "assets/images/mocha.png",
+    rating: "4.6/5",
+    description:
+        "Chocolatey Mocha — espresso combined with chocolate syrup and topped with steamed milk and cocoa dusting.",
+    category: "Hot Coffee",
+  ),
+
+  ProductModel(
+    id: 'p05',
+    name: "Iced Caramel",
+    price: "18.5 ر.ع.",
+    originalPrice: "21.2 ر.ع.",
+    tag: "NEW",
+    tagColor: "blue",
+    image: "assets/images/ice.png",
+    rating: "4.8/5",
+    description: "Chilled caramel latte with creamy milk and caramel drizzle.",
+    category: "Cold Coffee",
+  ),
+  ProductModel(
+    id: 'p06',
+    name: "Vanilla Frappé",
+    price: "19.3 ر.ع.",
+    originalPrice: "",
+    tag: "",
+    tagColor: "",
+    image: "assets/images/vlatte.png",
+    rating: "4.7/5",
+    description: "Blended vanilla coffee with ice and whipped cream on top.",
+    category: "Blended",
+  ),
+];
