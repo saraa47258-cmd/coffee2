@@ -1,200 +1,37 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ty_cafe/features/auth/presentation/pages/forgot_passworde_page.dart';
-import 'package:ty_cafe/features/auth/presentation/pages/register_page.dart';
 import 'package:ty_cafe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:ty_cafe/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:ty_cafe/features/admin/presentation/pages/admin_login_page.dart';
-import 'package:ty_cafe/main_app.dart';
+import 'package:ty_cafe/features/admin/presentation/pages/admin_dashboard_page.dart';
+import 'package:ty_cafe/features/admin/presentation/pages/admin_register_page.dart';
 import '../../../../core/theme/app_colors.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class AdminLoginPage extends StatefulWidget {
+  const AdminLoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<AdminLoginPage> createState() => _AdminLoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _AdminLoginPageState extends State<AdminLoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
-  late TapGestureRecognizer _termsRecognizer;
-
-  @override
-  void initState() {
-    super.initState();
-    _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () {
-        _showTermsModal(context);
-      };
-  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _termsRecognizer.dispose();
     super.dispose();
   }
 
-  void _navigateToHome(BuildContext context) {
+  void _navigateToDashboard(BuildContext context) {
     Navigator.pushReplacement(
       context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainApp(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 500),
+      MaterialPageRoute(
+        builder: (context) => const AdminDashboardPage(),
       ),
-    );
-  }
-
-  void _showTermsModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.whiteBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.72,
-          minChildSize: 0.3,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 60,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.subtleText.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Terms & Privacy',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'PlayfairDisplay',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.darkText,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  const SizedBox(height: 8),
-
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Terms of Service',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkText,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            '1. Acceptance\nBy using this app, you agree to these terms. '
-                            'This is sample text — replace with your real terms.',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 14,
-                              color: AppColors.subtleText,
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            '2. Use of Service\nYou may use the app for lawful purposes only. '
-                            'Any misuse is at your own risk.',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 14,
-                              color: AppColors.subtleText,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Privacy Policy',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkText,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'We collect minimal data to provide the service. '
-                            'Replace this placeholder with your actual privacy policy text, '
-                            'including info about data collection, usage, and retention.',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 14,
-                              color: AppColors.subtleText,
-                            ),
-                          ),
-                          SizedBox(height: 28),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color.lerp(
-                          AppColors.primaryColor,
-                          Colors.orange,
-                          0.6,
-                        )!,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Close',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.whiteText,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -205,7 +42,26 @@ class _LoginPageState extends State<LoginPage> {
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
-            _navigateToHome(context);
+            if (state.isAdmin) {
+              _navigateToDashboard(context);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'ليس لديك صلاحيات الأدمن',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: AppColors.whiteText,
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                ),
+              );
+            }
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -233,12 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color.fromARGB(
-                    255,
-                    238,
-                    184,
-                    132,
-                  ).withValues(alpha: 0.03),
+                  AppColors.primaryColor.withValues(alpha: 0.1),
                   AppColors.whiteBackground,
                 ],
                 stops: const [0.0, 0.8],
@@ -273,9 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryColor.withValues(
-                                alpha: 0.18,
-                              ),
+                              color: AppColors.primaryColor.withValues(alpha: 0.18),
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
@@ -283,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         child: const Center(
                           child: Icon(
-                            Icons.coffee_outlined,
+                            Icons.admin_panel_settings,
                             color: AppColors.whiteText,
                             size: 44,
                           ),
@@ -291,11 +140,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    Text(
-                      'Welcome Back',
+                    const Text(
+                      'تسجيل دخول الأدمن',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'PlayfairDisplay',
                         color: AppColors.darkText,
                         fontSize: 30,
@@ -303,10 +151,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Please enter your details to continue your coffee experience.',
+                    const Text(
+                      'يرجى تسجيل الدخول للوصول إلى لوحة التحكم',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Poppins',
                         color: AppColors.subtleText,
                         fontSize: 14,
@@ -338,8 +186,8 @@ class _LoginPageState extends State<LoginPage> {
                                 color: AppColors.darkText,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Email',
-                                hintText: 'e.g., name@email.com',
+                                labelText: 'البريد الإلكتروني',
+                                hintText: 'admin@example.com',
                                 hintStyle: const TextStyle(
                                   fontFamily: 'Poppins',
                                   color: AppColors.subtleText,
@@ -357,9 +205,7 @@ class _LoginPageState extends State<LoginPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: AppColors.subtleText.withValues(
-                                      alpha: 0.5,
-                                    ),
+                                    color: AppColors.subtleText.withValues(alpha: 0.5),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
@@ -376,13 +222,11 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Email is required';
+                                  return 'البريد الإلكتروني مطلوب';
                                 }
-                                final emailRegex = RegExp(
-                                  r'^[^@]+@[^@]+\.[^@]+',
-                                );
+                                final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
                                 if (!emailRegex.hasMatch(value.trim())) {
-                                  return 'Please enter a valid email';
+                                  return 'يرجى إدخال بريد إلكتروني صحيح';
                                 }
                                 return null;
                               },
@@ -410,8 +254,8 @@ class _LoginPageState extends State<LoginPage> {
                                 color: AppColors.darkText,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Password',
-                                hintText: 'Enter your password',
+                                labelText: 'كلمة المرور',
+                                hintText: 'أدخل كلمة المرور',
                                 hintStyle: const TextStyle(
                                   fontFamily: 'Poppins',
                                   color: AppColors.subtleText,
@@ -442,9 +286,7 @@ class _LoginPageState extends State<LoginPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: AppColors.subtleText.withValues(
-                                      alpha: 0.5,
-                                    ),
+                                    color: AppColors.subtleText.withValues(alpha: 0.5),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
@@ -461,10 +303,10 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Password is required';
+                                  return 'كلمة المرور مطلوبة';
                                 }
                                 if (value.length < 6) {
-                                  return 'Password must be at least 6 characters';
+                                  return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
                                 }
                                 return null;
                               },
@@ -473,35 +315,7 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ForgotPasswordPage(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: Color.lerp(
-                              AppColors.primaryColor,
-                              Colors.orange,
-                              0.6,
-                            )!,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
+                    const SizedBox(height: 28),
                     BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
                         final isLoading = state is AuthLoading;
@@ -513,11 +327,11 @@ class _LoginPageState extends State<LoginPage> {
                                 : () {
                                     if (_formKey.currentState!.validate()) {
                                       context.read<AuthBloc>().add(
-                                        AuthLoginRequested(
-                                          email: _emailController.text.trim(),
-                                          password: _passwordController.text,
-                                        ),
-                                      );
+                                            AuthLoginRequested(
+                                              email: _emailController.text.trim(),
+                                              password: _passwordController.text,
+                                            ),
+                                          );
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
@@ -530,9 +344,7 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               elevation: 6,
-                              shadowColor: AppColors.primaryColor.withValues(
-                                alpha: 0.3,
-                              ),
+                              shadowColor: AppColors.primaryColor.withValues(alpha: 0.3),
                             ),
                             child: isLoading
                                 ? const SizedBox(
@@ -546,7 +358,7 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                   )
                                 : const Text(
-                                    'Login',
+                                    'تسجيل الدخول',
                                     style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 18,
@@ -558,58 +370,22 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 28),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Don't have an account?",
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: AppColors.darkText,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => RegisterPage(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            'Sign Up',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              color: Color.lerp(
-                                AppColors.primaryColor,
-                                Colors.orange,
-                                0.6,
-                              )!,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     TextButton(
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminLoginPage(),
+                            builder: (_) => const AdminRegisterPage(),
                           ),
                         );
                       },
-                      child: Text(
-                        'تسجيل دخول الأدمن',
+                      child: const Text(
+                        'إنشاء حساب أدمن جديد',
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: AppColors.subtleText,
-                          decoration: TextDecoration.underline,
+                          color: AppColors.primaryColor,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -618,41 +394,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-          floatingActionButton: Padding(
-            padding: const EdgeInsets.only(bottom: 10.0),
-            child: RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 12,
-                  color: AppColors.subtleText,
-                ),
-                children: [
-                  const TextSpan(text: 'By continuing you agree to our '),
-                  TextSpan(
-                    text: 'Terms & Privacy',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                      color: Color.lerp(
-                        AppColors.primaryColor,
-                        Colors.orange,
-                        0.6,
-                      )!,
-                    ),
-                    recognizer: _termsRecognizer,
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
   }
 }
+

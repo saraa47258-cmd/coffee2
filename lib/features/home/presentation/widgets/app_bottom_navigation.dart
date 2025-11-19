@@ -96,12 +96,20 @@ class AppBottomNavigation extends StatelessWidget {
             icon: BlocBuilder<FavoriteBloc, FavoriteState>(
               builder: (context, favState) {
                 final hasFav = favState.favoriteIds.isNotEmpty;
-                return _buildFavoriteIcon(context, active: false);
+                return _buildFavoriteIcon(
+                  context,
+                  active: false,
+                  hasFavorites: hasFav,
+                );
               },
             ),
             activeIcon: BlocBuilder<FavoriteBloc, FavoriteState>(
               builder: (context, favState) {
-                return _buildFavoriteIcon(context, active: true);
+                return _buildFavoriteIcon(
+                  context,
+                  active: true,
+                  hasFavorites: favState.favoriteIds.isNotEmpty,
+                );
               },
             ),
             label: 'Favorite',
@@ -116,10 +124,29 @@ class AppBottomNavigation extends StatelessWidget {
     );
   }
 
-  Widget _buildFavoriteIcon(BuildContext context, {required bool active}) {
+  Widget _buildFavoriteIcon(
+    BuildContext context, {
+    required bool active,
+    required bool hasFavorites,
+  }) {
     return Stack(
       clipBehavior: Clip.none,
-      children: [Icon(active ? Icons.favorite : Icons.favorite_border)],
+      children: [
+        Icon(active ? Icons.favorite : Icons.favorite_border),
+        if (hasFavorites)
+          Positioned(
+            right: -6,
+            top: -4,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: Colors.redAccent,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

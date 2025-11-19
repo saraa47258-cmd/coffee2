@@ -33,3 +33,5 @@ class CartUpdateQuantity extends CartEvent {
 }
 
 class CartClear extends CartEvent {}
+
+class CartCheckoutRequested extends CartEvent {}

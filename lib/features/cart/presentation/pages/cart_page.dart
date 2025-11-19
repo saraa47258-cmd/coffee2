@@ -90,7 +90,7 @@ class CartPage extends StatelessWidget {
                             vertical: 12,
                           ),
                         ),
-                        onPressed: items.isEmpty
+                        onPressed: items.isEmpty || state.loading
                             ? null
                             : () {
                                 showDialog(
@@ -108,8 +108,8 @@ class CartPage extends StatelessWidget {
                                       TextButton(
                                         onPressed: () {
                                           context.read<CartBloc>().add(
-                                            CartClear(),
-                                          );
+                                                CartCheckoutRequested(),
+                                              );
                                           Navigator.pop(context);
                                           ScaffoldMessenger.of(
                                             context,

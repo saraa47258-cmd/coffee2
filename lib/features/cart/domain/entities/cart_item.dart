@@ -12,10 +12,10 @@ class CartItem {
     required this.quantity,
   });
 
-  CartItem copyWith({int? quantity}) {
+  CartItem copyWith({ProductModel? product, int? quantity}) {
     return CartItem(
       id: id,
-      product: product,
+      product: product ?? this.product,
       quantity: quantity ?? this.quantity,
     );
   }
@@ -58,4 +58,24 @@ class CartItem {
   }
 
   double get totalPrice => unitPrice * quantity;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'quantity': quantity,
+      'product': product.toMap(),
+    };
+  }
+
+  factory CartItem.fromMap(Map<String, dynamic> map) {
+    return CartItem(
+      id: (map['id'] ?? '').toString(),
+      quantity: (map['quantity'] ?? 0) is int
+          ? map['quantity'] as int
+          : int.tryParse(map['quantity']?.toString() ?? '') ?? 0,
+      product: ProductModel.fromMap(
+        Map<String, dynamic>.from(map['product'] ?? {}),
+      ),
+    );
+  }
 }

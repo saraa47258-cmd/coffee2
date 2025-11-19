@@ -4,19 +4,25 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:ty_cafe/features/cart/domain/entities/cart_item.dart';
 import 'package:ty_cafe/features/cart/domain/repositories/cart_repository.dart';
+import 'package:ty_cafe/features/orders/domain/repositories/orders_repository.dart';
 
 part 'cart_event.dart';
 part 'cart_state.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   final CartRepository repository;
+  final OrdersRepository ordersRepository;
 
-  CartBloc({required this.repository}) : super(const CartState()) {
+  CartBloc({
+    required this.repository,
+    required this.ordersRepository,
+  }) : super(const CartState()) {
     on<CartStarted>(_onStarted);
     on<CartAddItem>(_onAdd);
     on<CartRemoveItem>(_onRemove);
     on<CartUpdateQuantity>(_onUpdateQuantity);
     on<CartClear>(_onClear);
+    on<CartCheckoutRequested>(_onCheckout);
   }
 
   FutureOr<void> _onStarted(CartStarted e, Emitter<CartState> emit) async {
@@ -26,15 +32,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   FutureOr<void> _onAdd(CartAddItem e, Emitter<CartState> emit) async {
-    final exists = state.items.firstWhere(
-      (it) => it.id == e.item.id,
-      orElse: () => CartItem(id: '', product: e.item.product, quantity: 0),
-    );
-    if (exists.id == '') {
-      await repository.addItem(e.item);
-    } else {
-      await repository.addItem(e.item);
-    }
+    await repository.addItem(e.item);
     final items = await repository.getItems();
     emit(state.copyWith(items: items));
   }
@@ -74,5 +72,21 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   FutureOr<void> _onClear(CartClear e, Emitter<CartState> emit) async {
     await repository.clear();
     emit(state.copyWith(items: []));
+  }
+
+  FutureOr<void> _onCheckout(
+    CartCheckoutRequested event,
+    Emitter<CartState> emit,
+  ) async {
+    if (state.items.isEmpty) return;
+    emit(state.copyWith(loading: true));
+    try {
+      await ordersRepository.createOrder(state.items, state.totalAmount);
+      await repository.clear();
+      final refreshed = await repository.getItems();
+      emit(state.copyWith(items: refreshed, loading: false));
+    } catch (e) {
+      emit(state.copyWith(loading: false));
+    }
   }
 }

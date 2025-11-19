@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ty_cafe/features/auth/presentation/pages/login_page.dart';
+import 'package:ty_cafe/features/cart/presentation/bloc/cart_bloc.dart';
+import 'package:ty_cafe/features/favorite/presentation/bloc/favorite_bloc.dart';
+import 'package:ty_cafe/features/orders/presentation/pages/orders_page.dart';
 import 'package:ty_cafe/features/profile/presentation/bloc/profile_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/profile.dart';
@@ -21,10 +25,12 @@ class _ProfilePageState extends State<ProfilePage>
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   String? _avatarPath;
+  User? _firebaseUser;
 
   @override
   void initState() {
     super.initState();
+    _syncFirebaseUser();
     context.read<ProfileBloc>().add(ProfileLoadRequested());
   }
 
@@ -46,20 +52,83 @@ class _ProfilePageState extends State<ProfilePage>
     setState(() => _avatarPath = picked.path);
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final profile = Profile(
-      id: 'local_user',
-      name: _nameCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-      avatarPath: _avatarPath,
-    );
-    context.read<ProfileBloc>().add(ProfileUpdateRequested(profile));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Profile saved')));
+    try {
+      await _updateFirebaseProfile();
+      final profile = Profile(
+        id: 'local_user',
+        name: _nameCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        avatarPath: _avatarPath,
+      );
+      context.read<ProfileBloc>().add(ProfileUpdateRequested(profile));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile saved')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile: $e')),
+      );
+    }
   }
+
+  Future<void> _updateFirebaseProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final name = _nameCtrl.text.trim();
+    if (name.isNotEmpty && name != (user.displayName ?? '')) {
+      await user.updateDisplayName(name);
+      await user.reload();
+      _firebaseUser = FirebaseAuth.instance.currentUser;
+    }
+  }
+  Future<void> _syncFirebaseUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+      });
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _firebaseUser = user;
+      if (_nameCtrl.text.isEmpty && (user.displayName?.isNotEmpty ?? false)) {
+        _nameCtrl.text = user.displayName!;
+      }
+      if (_emailCtrl.text.isEmpty && (user.email?.isNotEmpty ?? false)) {
+        _emailCtrl.text = user.email!;
+      }
+    });
+  }
+
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      context.read<ProfileBloc>().add(ProfileClearRequested());
+      context.read<CartBloc>().add(CartClear());
+      context.read<FavoriteBloc>().add(FavoriteClearAll());
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to logout: $e')),
+      );
+    }
+  }
+
 
   InputDecoration _inputDecoration(String label, {String? hint}) {
     return InputDecoration(
@@ -101,10 +170,16 @@ class _ProfilePageState extends State<ProfilePage>
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state.profile != null) {
-            _nameCtrl.text = state.profile!.name;
-            _emailCtrl.text = state.profile!.email;
-            _phoneCtrl.text = state.profile!.phone;
-            setState(() => _avatarPath = state.profile!.avatarPath);
+            setState(() {
+              _nameCtrl.text = state.profile!.name.isNotEmpty
+                  ? state.profile!.name
+                  : (_firebaseUser?.displayName ?? _nameCtrl.text);
+              _emailCtrl.text = state.profile!.email.isNotEmpty
+                  ? state.profile!.email
+                  : (_firebaseUser?.email ?? _emailCtrl.text);
+              _phoneCtrl.text = state.profile!.phone;
+              _avatarPath = state.profile!.avatarPath;
+            });
           }
           if (state.error != null) {
             ScaffoldMessenger.of(
@@ -383,22 +458,36 @@ class _ProfilePageState extends State<ProfilePage>
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  onPressed: () {
-                                    // context.read<ProfileBloc>().add(
-                                    //   ProfileClearRequested(),
-                                    // );
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => LoginPage(),
-                                      ),
-                                    );
-                                  },
+                                  onPressed: () => _logout(),
                                   icon: const Icon(Icons.logout_outlined),
                                   label: const Text('Logout'),
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const OrdersPage(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.receipt_long_outlined),
+                              label: const Text('عرض الطلبات'),
+                            ),
                           ),
                         ],
                       ),
@@ -437,7 +526,7 @@ class _ProfilePageState extends State<ProfilePage>
                     elevation: 8,
                     shadowColor: AppColors.primaryColor.withValues(alpha: 0.25),
                   ),
-                  onPressed: _save,
+                  onPressed: () => _save(),
                   child: const Text(
                     'Save changes',
                     style: TextStyle(

@@ -9,8 +9,10 @@ class ProductModel {
   final String rating;
   final String description;
   final String category;
+  final bool hasDiscount;
+  final double discountPercent;
 
-  ProductModel({
+  const ProductModel({
     required this.id,
     required this.name,
     required this.price,
@@ -21,6 +23,8 @@ class ProductModel {
     this.rating = '4.9/5',
     this.description = '',
     this.category = 'All',
+    this.hasDiscount = false,
+    this.discountPercent = 0.0,
   });
 
   factory ProductModel.fromMap(Map<String, dynamic> map) {
@@ -35,6 +39,9 @@ class ProductModel {
       rating: (map['rating'] ?? '4.9/5').toString(),
       description: (map['description'] ?? '').toString(),
       category: (map['category'] ?? 'All').toString(),
+      hasDiscount: (map['hasDiscount'] as bool?) ?? false,
+      discountPercent:
+          (map['discountPercent'] is num) ? (map['discountPercent'] as num).toDouble() : 0.0,
     );
   }
 
@@ -50,6 +57,8 @@ class ProductModel {
       "rating": rating,
       "description": description,
       "category": category,
+      "hasDiscount": hasDiscount,
+      "discountPercent": discountPercent,
     };
   }
 
@@ -64,6 +73,8 @@ class ProductModel {
     String? rating,
     String? description,
     String? category,
+    bool? hasDiscount,
+    double? discountPercent,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -76,11 +87,13 @@ class ProductModel {
       rating: rating ?? this.rating,
       description: description ?? this.description,
       category: category ?? this.category,
+      hasDiscount: hasDiscount ?? this.hasDiscount,
+      discountPercent: discountPercent ?? this.discountPercent,
     );
   }
 
   @override
   String toString() {
-    return 'ProductModel(id: $id, name: $name, category: $category, price: $price)';
+    return 'ProductModel(id: $id, name: $name, price: $price, hasDiscount: $hasDiscount, discountPercent: $discountPercent)';
   }
 }
