@@ -257,7 +257,8 @@ class _ProductsTab extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ProductFormSheet(product: product),
+      builder: (sheetContext) =>
+          _ProductFormSheet(product: product, parentContext: context),
     );
   }
 
@@ -841,8 +842,9 @@ class _AdminProductCard extends StatelessWidget {
 
 class _ProductFormSheet extends StatefulWidget {
   final ProductModel? product;
+  final BuildContext? parentContext;
 
-  const _ProductFormSheet({this.product});
+  const _ProductFormSheet({this.product, this.parentContext});
 
   @override
   State<_ProductFormSheet> createState() => _ProductFormSheetState();
@@ -858,6 +860,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
   late final TextEditingController _tagCtrl;
   late final TextEditingController _tagColorCtrl;
   late final TextEditingController _discountCtrl;
+  late final TextEditingController _quantityCtrl;
 
   bool _hasDiscount = false;
 
@@ -880,6 +883,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
           ? product.discountPercent.toString()
           : '',
     );
+    _quantityCtrl = TextEditingController(
+      text: product?.quantity.toString() ?? '0',
+    );
   }
 
   @override
@@ -892,13 +898,16 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     _tagCtrl.dispose();
     _tagColorCtrl.dispose();
     _discountCtrl.dispose();
+    _quantityCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
-    final cubit = context.read<AdminProductsCubit>();
+    // Use parentContext if available, otherwise use the current context
+    final cubitContext = widget.parentContext ?? context;
+    final cubit = cubitContext.read<AdminProductsCubit>();
     final basePrice = double.tryParse(_basePriceCtrl.text.trim()) ?? 0.0;
     final discountPercent = _hasDiscount
         ? double.tryParse(_discountCtrl.text.trim()) ?? 0.0
@@ -906,6 +915,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     final finalPrice = _hasDiscount
         ? basePrice * (1 - (discountPercent.clamp(0, 100) / 100))
         : basePrice;
+    final quantity = int.tryParse(_quantityCtrl.text.trim()) ?? 0;
 
     final product = ProductModel(
       id: widget.product?.id ?? '',
@@ -922,6 +932,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       discountPercent: _hasDiscount
           ? discountPercent.clamp(0, 100).toDouble()
           : 0.0,
+      quantity: quantity,
     );
 
     if (widget.product == null) {
@@ -989,6 +1000,18 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 validator: (v) => double.tryParse(v ?? '') == null
                     ? 'أدخل رقمًا صحيحًا'
                     : null,
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                label: 'الكمية المتوفرة',
+                controller: _quantityCtrl,
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  final value = int.tryParse(v ?? '');
+                  if (value == null) return 'أدخل رقمًا صحيحًا';
+                  if (value < 0) return 'الكمية يجب أن تكون أكبر من أو تساوي 0';
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               SwitchListTile.adaptive(

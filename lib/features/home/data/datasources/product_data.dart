@@ -4,8 +4,8 @@ final List<ProductModel> productList = [
   ProductModel(
     id: 'p01',
     name: "Cappuccino",
-    price: "15.4 ر.ع.",
-    originalPrice: "17.7 ر.ع.",
+    price: "1 ر.ع.",
+    originalPrice: "",
     tag: "TOP SALE",
     tagColor: "blue",
     image: "assets/images/cappucino.png",
@@ -17,8 +17,8 @@ final List<ProductModel> productList = [
   ProductModel(
     id: 'p02',
     name: "Americano",
-    price: "15.4 ر.ع.",
-    originalPrice: "17.7 ر.ع.",
+    price: "2 ر.ع.",
+    originalPrice: "",
     tag: "9% OFF",
     tagColor: "red",
     image: "assets/images/americano.png",
@@ -30,7 +30,7 @@ final List<ProductModel> productList = [
   ProductModel(
     id: 'p03',
     name: "Latte",
-    price: "16.2 ر.ع.",
+    price: "1.5 ر.ع.",
     originalPrice: "",
     tag: "",
     tagColor: "",
@@ -43,7 +43,7 @@ final List<ProductModel> productList = [
   ProductModel(
     id: 'p04',
     name: "Mocha",
-    price: "17.3 ر.ع.",
+    price: "1 ر.ع.",
     originalPrice: "",
     tag: "",
     tagColor: "",
@@ -57,8 +57,8 @@ final List<ProductModel> productList = [
   ProductModel(
     id: 'p05',
     name: "Iced Caramel",
-    price: "18.5 ر.ع.",
-    originalPrice: "21.2 ر.ع.",
+    price: "2 ر.ع.",
+    originalPrice: "",
     tag: "NEW",
     tagColor: "blue",
     image: "assets/images/ice.png",
@@ -69,7 +69,7 @@ final List<ProductModel> productList = [
   ProductModel(
     id: 'p06',
     name: "Vanilla Frappé",
-    price: "19.3 ر.ع.",
+    price: "1.5 ر.ع.",
     originalPrice: "",
     tag: "",
     tagColor: "",

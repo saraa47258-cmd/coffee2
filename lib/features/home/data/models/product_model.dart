@@ -11,6 +11,7 @@ class ProductModel {
   final String category;
   final bool hasDiscount;
   final double discountPercent;
+  final int quantity;
 
   const ProductModel({
     required this.id,
@@ -25,6 +26,7 @@ class ProductModel {
     this.category = 'All',
     this.hasDiscount = false,
     this.discountPercent = 0.0,
+    this.quantity = 0,
   });
 
   factory ProductModel.fromMap(Map<String, dynamic> map) {
@@ -40,8 +42,10 @@ class ProductModel {
       description: (map['description'] ?? '').toString(),
       category: (map['category'] ?? 'All').toString(),
       hasDiscount: (map['hasDiscount'] as bool?) ?? false,
-      discountPercent:
-          (map['discountPercent'] is num) ? (map['discountPercent'] as num).toDouble() : 0.0,
+      discountPercent: (map['discountPercent'] is num)
+          ? (map['discountPercent'] as num).toDouble()
+          : 0.0,
+      quantity: (map['quantity'] is num) ? (map['quantity'] as num).toInt() : 0,
     );
   }
 
@@ -59,6 +63,7 @@ class ProductModel {
       "category": category,
       "hasDiscount": hasDiscount,
       "discountPercent": discountPercent,
+      "quantity": quantity,
     };
   }
 
@@ -75,6 +80,7 @@ class ProductModel {
     String? category,
     bool? hasDiscount,
     double? discountPercent,
+    int? quantity,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -89,6 +95,7 @@ class ProductModel {
       category: category ?? this.category,
       hasDiscount: hasDiscount ?? this.hasDiscount,
       discountPercent: discountPercent ?? this.discountPercent,
+      quantity: quantity ?? this.quantity,
     );
   }
 
