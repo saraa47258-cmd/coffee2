@@ -21,7 +21,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
-  Future<void> createOrder(List<CartItem> items, double totalAmount) async {
+  Future<void> createOrder(List<CartItem> items, double totalAmount, {int? tableNumber}) async {
     final collection = _collection;
     if (collection == null) throw Exception('User not authenticated');
     final uid = auth.currentUser?.uid;
@@ -31,6 +31,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       'createdAt': FieldValue.serverTimestamp(),
       'items': items.map((item) => item.toMap()).toList(),
       'userId': uid, // حفظ معرف المستخدم
+      if (tableNumber != null) 'tableNumber': tableNumber,
     };
     
     // حفظ الطلب في مكانين:
@@ -60,15 +61,17 @@ class OrdersRepositoryImpl implements OrdersRepository {
       
       return snapshot.docs.map((doc) {
         final order = OrderModel.fromDoc(doc);
-        // التأكد من وجود userId في البيانات
+        // التأكد من وجود userId و tableNumber في البيانات
         final data = doc.data();
         final userId = data['userId'] as String?;
+        final tableNumber = data['tableNumber'] as int?;
         return OrderModel(
           id: order.id,
           items: order.items,
           total: order.total,
           createdAt: order.createdAt,
           userId: userId,
+          tableNumber: tableNumber,
         );
       }).toList();
     } catch (e) {

@@ -192,17 +192,17 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
   Future<void> _loadDataIfNeeded() async {
     final ordersState = context.read<OrdersCubit>().state;
     final productsState = context.read<AdminProductsCubit>().state;
-    
+
     // إذا لم تكن هناك بيانات، قم بتحميل البيانات التجريبية تلقائياً
     if (ordersState.orders.isEmpty && !ordersState.loading) {
       await context.read<OrdersCubit>().loadMockOrders();
     }
-    
+
     if (productsState.products.isEmpty && !productsState.loading) {
       // إضافة المنتجات إلى Firebase بدلاً من التحميل المحلي
       await context.read<AdminProductsCubit>().addMockProductsToFirebase();
     }
-    
+
     // انتظر قليلاً ثم احسب الإحصائيات
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
@@ -212,13 +212,13 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
 
   void _calculateAnalytics() {
     if (_isCalculating) return;
-    
+
     final ordersState = context.read<OrdersCubit>().state;
     final productsState = context.read<AdminProductsCubit>().state;
     final analyticsState = context.read<AnalyticsCubit>().state;
 
     // حساب الإحصائيات فقط إذا كانت البيانات متوفرة ولم يتم حسابها بعد
-    if (ordersState.orders.isNotEmpty && 
+    if (ordersState.orders.isNotEmpty &&
         productsState.products.isNotEmpty &&
         analyticsState.analyticsData == null &&
         !analyticsState.loading) {
@@ -245,21 +245,22 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                 final hasData =
                     ordersState.orders.isNotEmpty ||
                     productsState.products.isNotEmpty;
-                
+
                 // معالجة الأخطاء أولاً
                 if (ordersState.error != null || productsState.error != null) {
                   return _ErrorState(
-                    message: ordersState.error ?? productsState.error ?? 'حدث خطأ',
+                    message:
+                        ordersState.error ?? productsState.error ?? 'حدث خطأ',
                     onRetry: () {
                       context.read<OrdersCubit>().loadAllOrders();
                       context.read<AdminProductsCubit>().start();
                     },
                   );
                 }
-                
+
                 // إذا لم تكن هناك بيانات، قم بتحميل البيانات التجريبية تلقائياً
-                if (!hasData && 
-                    !ordersState.loading && 
+                if (!hasData &&
+                    !ordersState.loading &&
                     !productsState.loading) {
                   // تحميل البيانات التجريبية تلقائياً
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -287,10 +288,10 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                     ),
                   );
                 }
-                
+
                 // حساب الإحصائيات تلقائياً إذا كانت البيانات متوفرة
-                if (hasData && 
-                    analyticsState.analyticsData == null && 
+                if (hasData &&
+                    analyticsState.analyticsData == null &&
                     !analyticsState.loading &&
                     !ordersState.loading &&
                     !productsState.loading) {
@@ -302,7 +303,8 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                 }
 
                 // عرض مؤشر التحميل فقط إذا كان هناك تحميل نشط
-                if ((analyticsState.loading && analyticsState.analyticsData == null) ||
+                if ((analyticsState.loading &&
+                        analyticsState.analyticsData == null) ||
                     (ordersState.loading && ordersState.orders.isEmpty) ||
                     (productsState.loading && productsState.products.isEmpty)) {
                   return const Center(
@@ -320,7 +322,7 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                 }
 
                 final analytics = analyticsState.analyticsData;
-                
+
                 // إذا كانت البيانات موجودة ولكن الإحصائيات لم تُحسب بعد
                 if (analytics == null && hasData) {
                   // سيتم حسابها تلقائياً في addPostFrameCallback أعلاه
@@ -330,7 +332,7 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                     ),
                   );
                 }
-                
+
                 // إذا لم تكن هناك إحصائيات (يجب أن يكون hasData = false هنا)
                 if (analytics == null) {
                   return const Center(
@@ -1525,6 +1527,23 @@ class _AdminOrderCard extends StatelessWidget {
                   color: AppColors.subtleText.withValues(alpha: 0.8),
                 ),
               ),
+              if (order.tableNumber != null) ...[
+                const SizedBox(width: 16),
+                Icon(
+                  Icons.table_restaurant,
+                  size: 14,
+                  color: AppColors.subtleText.withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'طاولة ${order.tableNumber}',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: AppColors.subtleText.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ty_cafe/features/cart/presentation/bloc/cart_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/cart_item_tile.dart';
+import 'checkout_page.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -93,35 +94,14 @@ class CartPage extends StatelessWidget {
                         onPressed: items.isEmpty || state.loading
                             ? null
                             : () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: const Text('Checkout'),
-                                    content: Text(
-                                      'الدفع: ${state.totalAmount.toStringAsFixed(1)} ر.ع.',
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CheckoutPage(
+                                      totalAmount: state.totalAmount,
+                                      totalQuantity: state.totalQuantity,
+                                      items: items,
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          context.read<CartBloc>().add(
-                                                CartCheckoutRequested(),
-                                              );
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Order placed!'),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text('Pay'),
-                                      ),
-                                    ],
                                   ),
                                 );
                               },

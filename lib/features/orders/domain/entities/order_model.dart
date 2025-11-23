@@ -7,6 +7,7 @@ class OrderModel {
   final double total;
   final DateTime createdAt;
   final String? userId; // معرف المستخدم (للأدمن)
+  final int? tableNumber; // رقم الطاولة
 
   const OrderModel({
     required this.id,
@@ -14,6 +15,7 @@ class OrderModel {
     required this.total,
     required this.createdAt,
     this.userId,
+    this.tableNumber,
   });
 
   factory OrderModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -34,6 +36,7 @@ class OrderModel {
           : double.tryParse(data['total']?.toString() ?? '') ?? 0.0,
       createdAt: createdAt,
       userId: data['userId'] as String?,
+      tableNumber: data['tableNumber'] as int?,
     );
   }
 
@@ -43,6 +46,7 @@ class OrderModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'items': items.map((item) => item.toMap()).toList(),
       if (userId != null) 'userId': userId,
+      if (tableNumber != null) 'tableNumber': tableNumber,
     };
   }
 }

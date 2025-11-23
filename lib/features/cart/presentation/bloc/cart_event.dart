@@ -34,4 +34,10 @@ class CartUpdateQuantity extends CartEvent {
 
 class CartClear extends CartEvent {}
 
-class CartCheckoutRequested extends CartEvent {}
+class CartCheckoutRequested extends CartEvent {
+  final int? tableNumber;
+  const CartCheckoutRequested({this.tableNumber});
+  
+  @override
+  List<Object> get props => [tableNumber ?? ''];
+}

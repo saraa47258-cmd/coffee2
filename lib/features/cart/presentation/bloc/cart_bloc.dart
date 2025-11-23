@@ -81,7 +81,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     if (state.items.isEmpty) return;
     emit(state.copyWith(loading: true));
     try {
-      await ordersRepository.createOrder(state.items, state.totalAmount);
+      await ordersRepository.createOrder(
+        state.items,
+        state.totalAmount,
+        tableNumber: event.tableNumber,
+      );
       await repository.clear();
       final refreshed = await repository.getItems();
       emit(state.copyWith(items: refreshed, loading: false));

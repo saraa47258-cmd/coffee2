@@ -252,13 +252,43 @@ class _OrderCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          _formatDate(order.createdAt),
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            color: AppColors.subtleText,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              _formatDate(order.createdAt),
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: AppColors.subtleText,
+                              ),
+                            ),
+                            if (order.tableNumber != null) ...[
+                              const SizedBox(width: 8),
+                              const Text(
+                                '•',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  color: AppColors.subtleText,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.table_restaurant,
+                                size: 14,
+                                color: AppColors.subtleText,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'طاولة ${order.tableNumber}',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  color: AppColors.subtleText,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
