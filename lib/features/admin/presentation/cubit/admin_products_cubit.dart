@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:ty_cafe/features/admin/data/mock_data.dart';
 import 'package:ty_cafe/features/admin/data/repositories/admin_products_repository.dart';
 import 'package:ty_cafe/features/admin/presentation/cubit/admin_products_state.dart';
 import 'package:ty_cafe/features/home/data/models/product_model.dart';
@@ -55,6 +56,36 @@ class AdminProductsCubit extends Cubit<AdminProductsState> {
       await repository.deleteProduct(productId);
     } catch (e) {
       emit(state.copyWith(error: e.toString()));
+    }
+  }
+
+  // تحميل البيانات التجريبية محلياً (للاختبار)
+  Future<void> loadMockProducts() async {
+    emit(state.copyWith(loading: true, error: null));
+    try {
+      await Future.delayed(const Duration(milliseconds: 500)); // محاكاة التحميل
+      final mockProducts = MockData.getMockProducts();
+      emit(state.copyWith(products: mockProducts, loading: false, error: null));
+    } catch (e) {
+      emit(state.copyWith(
+        loading: false,
+        error: e.toString(),
+      ));
+    }
+  }
+
+  // إضافة المنتجات التجريبية إلى Firebase
+  Future<void> addMockProductsToFirebase() async {
+    emit(state.copyWith(loading: true, error: null));
+    try {
+      await repository.addMockProductsToFirebase();
+      // البيانات ستُحدّث تلقائياً عبر watchProducts
+      emit(state.copyWith(loading: false, error: null));
+    } catch (e) {
+      emit(state.copyWith(
+        loading: false,
+        error: e.toString(),
+      ));
     }
   }
 

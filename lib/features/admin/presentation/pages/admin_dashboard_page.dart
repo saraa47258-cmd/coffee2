@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ty_cafe/features/admin/data/repositories/admin_products_repository.dart';
+import 'package:ty_cafe/features/admin/domain/entities/analytics_data.dart';
 import 'package:ty_cafe/features/admin/presentation/cubit/admin_products_cubit.dart';
 import 'package:ty_cafe/features/admin/presentation/cubit/admin_products_state.dart';
+import 'package:ty_cafe/features/admin/presentation/cubit/analytics_cubit.dart';
+import 'package:ty_cafe/features/admin/presentation/cubit/analytics_state.dart';
 import 'package:ty_cafe/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:ty_cafe/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:ty_cafe/features/auth/presentation/pages/login_page.dart';
@@ -33,6 +36,7 @@ class AdminDashboardPage extends StatelessWidget {
               AdminProductsCubit(repository: AdminProductsRepository())
                 ..start(),
         ),
+        BlocProvider(create: (_) => AnalyticsCubit()),
       ],
       child: const _AdminDashboardView(),
     );
@@ -55,7 +59,7 @@ class _AdminDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: AppColors.whiteBackground,
         body: Container(
@@ -143,6 +147,7 @@ class _AdminDashboardView extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                       tabs: [
+                        Tab(text: 'الإحصائيات'),
                         Tab(text: 'الطلبات'),
                         Tab(text: 'المنتجات'),
                       ],
@@ -150,16 +155,966 @@ class _AdminDashboardView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Expanded(
+                Expanded(
                   child: TabBarView(
-                    physics: BouncingScrollPhysics(),
-                    children: [_OrdersTab(), _ProductsTab()],
+                    physics: const BouncingScrollPhysics(),
+                    children: [_AnalyticsTab(), _OrdersTab(), _ProductsTab()],
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AnalyticsTab extends StatefulWidget {
+  const _AnalyticsTab();
+
+  @override
+  State<_AnalyticsTab> createState() => _AnalyticsTabState();
+}
+
+class _AnalyticsTabState extends State<_AnalyticsTab> {
+  String _selectedPeriod = 'daily'; // daily, weekly, monthly
+  bool _isCalculating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDataIfNeeded();
+    });
+  }
+
+  Future<void> _loadDataIfNeeded() async {
+    final ordersState = context.read<OrdersCubit>().state;
+    final productsState = context.read<AdminProductsCubit>().state;
+    
+    // إذا لم تكن هناك بيانات، قم بتحميل البيانات التجريبية تلقائياً
+    if (ordersState.orders.isEmpty && !ordersState.loading) {
+      await context.read<OrdersCubit>().loadMockOrders();
+    }
+    
+    if (productsState.products.isEmpty && !productsState.loading) {
+      // إضافة المنتجات إلى Firebase بدلاً من التحميل المحلي
+      await context.read<AdminProductsCubit>().addMockProductsToFirebase();
+    }
+    
+    // انتظر قليلاً ثم احسب الإحصائيات
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      _calculateAnalytics();
+    }
+  }
+
+  void _calculateAnalytics() {
+    if (_isCalculating) return;
+    
+    final ordersState = context.read<OrdersCubit>().state;
+    final productsState = context.read<AdminProductsCubit>().state;
+    final analyticsState = context.read<AnalyticsCubit>().state;
+
+    // حساب الإحصائيات فقط إذا كانت البيانات متوفرة ولم يتم حسابها بعد
+    if (ordersState.orders.isNotEmpty && 
+        productsState.products.isNotEmpty &&
+        analyticsState.analyticsData == null &&
+        !analyticsState.loading) {
+      _isCalculating = true;
+      try {
+        context.read<AnalyticsCubit>().calculateAnalytics(
+          orders: ordersState.orders,
+          products: productsState.products,
+        );
+      } finally {
+        _isCalculating = false;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<OrdersCubit, OrdersState>(
+      builder: (context, ordersState) {
+        return BlocBuilder<AdminProductsCubit, AdminProductsState>(
+          builder: (context, productsState) {
+            return BlocBuilder<AnalyticsCubit, AnalyticsState>(
+              builder: (context, analyticsState) {
+                final hasData =
+                    ordersState.orders.isNotEmpty ||
+                    productsState.products.isNotEmpty;
+                
+                // معالجة الأخطاء أولاً
+                if (ordersState.error != null || productsState.error != null) {
+                  return _ErrorState(
+                    message: ordersState.error ?? productsState.error ?? 'حدث خطأ',
+                    onRetry: () {
+                      context.read<OrdersCubit>().loadAllOrders();
+                      context.read<AdminProductsCubit>().start();
+                    },
+                  );
+                }
+                
+                // إذا لم تكن هناك بيانات، قم بتحميل البيانات التجريبية تلقائياً
+                if (!hasData && 
+                    !ordersState.loading && 
+                    !productsState.loading) {
+                  // تحميل البيانات التجريبية تلقائياً
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      _loadDataIfNeeded();
+                    }
+                  });
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: AppColors.primaryColor,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'جاري تحميل البيانات...',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            color: AppColors.subtleText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                // حساب الإحصائيات تلقائياً إذا كانت البيانات متوفرة
+                if (hasData && 
+                    analyticsState.analyticsData == null && 
+                    !analyticsState.loading &&
+                    !ordersState.loading &&
+                    !productsState.loading) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      _calculateAnalytics();
+                    }
+                  });
+                }
+
+                // عرض مؤشر التحميل فقط إذا كان هناك تحميل نشط
+                if ((analyticsState.loading && analyticsState.analyticsData == null) ||
+                    (ordersState.loading && ordersState.orders.isEmpty) ||
+                    (productsState.loading && productsState.products.isEmpty)) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryColor,
+                    ),
+                  );
+                }
+
+                if (analyticsState.error != null) {
+                  return _ErrorState(
+                    message: analyticsState.error!,
+                    onRetry: _calculateAnalytics,
+                  );
+                }
+
+                final analytics = analyticsState.analyticsData;
+                
+                // إذا كانت البيانات موجودة ولكن الإحصائيات لم تُحسب بعد
+                if (analytics == null && hasData) {
+                  // سيتم حسابها تلقائياً في addPostFrameCallback أعلاه
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryColor,
+                    ),
+                  );
+                }
+                
+                // إذا لم تكن هناك إحصائيات (يجب أن يكون hasData = false هنا)
+                if (analytics == null) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryColor,
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await context.read<OrdersCubit>().loadAllOrders();
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    _calculateAnalytics();
+                  },
+                  color: AppColors.primaryColor,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        // زر تحميل البيانات التجريبية
+                        if (!hasData)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.primaryColor.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: AppColors.primaryColor,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'لا توجد بيانات حقيقية',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.darkText,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'قم بتحميل البيانات التجريبية لرؤية الإحصائيات',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          color: AppColors.subtleText,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    await context
+                                        .read<AdminProductsCubit>()
+                                        .addMockProductsToFirebase();
+                                    await context
+                                        .read<OrdersCubit>()
+                                        .loadMockOrders();
+                                    await Future.delayed(
+                                      const Duration(milliseconds: 500),
+                                    );
+                                    _calculateAnalytics();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryColor,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'تحميل',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      color: AppColors.whiteText,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        // إحصائيات أساسية
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatCard(
+                                title: 'إجمالي الطلبات',
+                                value: analytics.totalOrders.toString(),
+                                icon: Icons.shopping_bag_outlined,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _StatCard(
+                                title: 'إجمالي الإيرادات',
+                                value:
+                                    '${analytics.totalRevenue.toStringAsFixed(2)} ر.ع.',
+                                icon: Icons.attach_money_rounded,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatCard(
+                                title: 'متوسط قيمة الطلب',
+                                value:
+                                    '${analytics.averageOrderValue.toStringAsFixed(2)} ر.ع.',
+                                icon: Icons.trending_up,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _StatCard(
+                                title: 'عدد العملاء',
+                                value: analytics.uniqueCustomers.toString(),
+                                icon: Icons.people_outline,
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // اختيار الفترة
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.whiteBackground,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.subtleText.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _PeriodButton(
+                                label: 'يومي',
+                                isSelected: _selectedPeriod == 'daily',
+                                onTap: () =>
+                                    setState(() => _selectedPeriod = 'daily'),
+                              ),
+                              _PeriodButton(
+                                label: 'أسبوعي',
+                                isSelected: _selectedPeriod == 'weekly',
+                                onTap: () =>
+                                    setState(() => _selectedPeriod = 'weekly'),
+                              ),
+                              _PeriodButton(
+                                label: 'شهري',
+                                isSelected: _selectedPeriod == 'monthly',
+                                onTap: () =>
+                                    setState(() => _selectedPeriod = 'monthly'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // رسم بياني للإيرادات
+                        _RevenueChart(
+                          period: _selectedPeriod,
+                          analytics: analytics,
+                        ),
+                        const SizedBox(height: 24),
+                        // رسم بياني للطلبات
+                        _OrdersChart(
+                          period: _selectedPeriod,
+                          analytics: analytics,
+                        ),
+                        const SizedBox(height: 24),
+                        // أفضل المنتجات مبيعاً
+                        _TopProductsSection(topProducts: analytics.topProducts),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _PeriodButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PeriodButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected ? AppColors.whiteText : AppColors.subtleText,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RevenueChart extends StatelessWidget {
+  final String period;
+  final AnalyticsData analytics;
+
+  const _RevenueChart({required this.period, required this.analytics});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChartContainer(
+      title: 'الإيرادات',
+      icon: Icons.attach_money_rounded,
+      child: _buildChart(),
+    );
+  }
+
+  Widget _buildChart() {
+    if (period == 'daily') {
+      final maxRevenue = analytics.dailyStats
+          .map((e) => e.revenue)
+          .reduce((a, b) => a > b ? a : b);
+      return SizedBox(
+        height: 200,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: analytics.dailyStats.map((stat) {
+            final height = maxRevenue > 0
+                ? (stat.revenue / maxRevenue) * 160
+                : 0.0;
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 30,
+                  height: height,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${stat.date.day}/${stat.date.month}',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 9,
+                    color: AppColors.subtleText,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  stat.revenue.toStringAsFixed(0),
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 8,
+                    color: AppColors.darkText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      );
+    } else if (period == 'weekly') {
+      final maxRevenue = analytics.weeklyStats
+          .map((e) => e.revenue)
+          .reduce((a, b) => a > b ? a : b);
+      return SizedBox(
+        height: 200,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: analytics.weeklyStats.map((stat) {
+            final height = maxRevenue > 0
+                ? (stat.revenue / maxRevenue) * 160
+                : 0.0;
+            return Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: height,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    stat.weekLabel,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 9,
+                      color: AppColors.subtleText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stat.revenue.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 8,
+                      color: AppColors.darkText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    } else {
+      final maxRevenue = analytics.monthlyStats
+          .map((e) => e.revenue)
+          .reduce((a, b) => a > b ? a : b);
+      return SizedBox(
+        height: 200,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: analytics.monthlyStats.map((stat) {
+            final height = maxRevenue > 0
+                ? (stat.revenue / maxRevenue) * 160
+                : 0.0;
+            return Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    height: height,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    stat.monthLabel.split(' ')[0],
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 8,
+                      color: AppColors.subtleText,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stat.revenue.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 7,
+                      color: AppColors.darkText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    }
+  }
+}
+
+class _OrdersChart extends StatelessWidget {
+  final String period;
+  final AnalyticsData analytics;
+
+  const _OrdersChart({required this.period, required this.analytics});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChartContainer(
+      title: 'عدد الطلبات',
+      icon: Icons.shopping_bag_outlined,
+      child: _buildChart(),
+    );
+  }
+
+  Widget _buildChart() {
+    if (period == 'daily') {
+      final maxOrders = analytics.dailyStats
+          .map((e) => e.orders)
+          .reduce((a, b) => a > b ? a : b);
+      return SizedBox(
+        height: 200,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: analytics.dailyStats.map((stat) {
+            final height = maxOrders > 0
+                ? (stat.orders / maxOrders) * 160
+                : 0.0;
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 30,
+                  height: height,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${stat.date.day}/${stat.date.month}',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 9,
+                    color: AppColors.subtleText,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  stat.orders.toString(),
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 8,
+                    color: AppColors.darkText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      );
+    } else if (period == 'weekly') {
+      final maxOrders = analytics.weeklyStats
+          .map((e) => e.orders)
+          .reduce((a, b) => a > b ? a : b);
+      return SizedBox(
+        height: 200,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: analytics.weeklyStats.map((stat) {
+            final height = maxOrders > 0
+                ? (stat.orders / maxOrders) * 160
+                : 0.0;
+            return Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: height,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    stat.weekLabel,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 9,
+                      color: AppColors.subtleText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stat.orders.toString(),
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 8,
+                      color: AppColors.darkText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    } else {
+      final maxOrders = analytics.monthlyStats
+          .map((e) => e.orders)
+          .reduce((a, b) => a > b ? a : b);
+      return SizedBox(
+        height: 200,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: analytics.monthlyStats.map((stat) {
+            final height = maxOrders > 0
+                ? (stat.orders / maxOrders) * 160
+                : 0.0;
+            return Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    height: height,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    stat.monthLabel.split(' ')[0],
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 8,
+                      color: AppColors.subtleText,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stat.orders.toString(),
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 7,
+                      color: AppColors.darkText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    }
+  }
+}
+
+class _ChartContainer extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _ChartContainer({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.whiteBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppColors.primaryColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontFamily: 'PlayfairDisplay',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _TopProductsSection extends StatelessWidget {
+  final List<TopProduct> topProducts;
+
+  const _TopProductsSection({required this.topProducts});
+
+  @override
+  Widget build(BuildContext context) {
+    if (topProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.whiteBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.star_outline,
+                color: AppColors.primaryColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'أفضل المنتجات مبيعاً',
+                style: TextStyle(
+                  fontFamily: 'PlayfairDisplay',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...topProducts.asMap().entries.map((entry) {
+            final index = entry.key;
+            final product = entry.value;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.whiteText,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.productName,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkText,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'الكمية: ${product.quantitySold} | الإيرادات: ${product.totalRevenue.toStringAsFixed(2)} ر.ع.',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: AppColors.subtleText.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
