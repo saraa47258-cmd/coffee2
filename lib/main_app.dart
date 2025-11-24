@@ -4,6 +4,7 @@ import 'package:ty_cafe/features/home/presentation/widgets/app_bottom_navigation
 import 'package:ty_cafe/features/cart/presentation/pages/cart_page.dart';
 import 'package:ty_cafe/features/favorite/presentation/pages/favorite_page.dart';
 import 'package:ty_cafe/features/profile/presentation/pages/profile_page.dart';
+import 'package:ty_cafe/features/store/presentation/pages/store_page.dart';
 
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
@@ -19,7 +20,7 @@ class _MainAppState extends State<MainApp> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _pages = [HomePage(), CartPage(), FavoritePage(), ProfilePage()];
+    _pages = [HomePage(), StorePage(), CartPage(), FavoritePage(), ProfilePage()];
   }
 
   void _onBottomNavTap(int index) {

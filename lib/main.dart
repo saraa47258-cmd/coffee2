@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,6 +10,7 @@ import 'package:ty_cafe/features/favorite/data/repositories/favorite_repository_
 import 'package:ty_cafe/features/favorite/presentation/bloc/favorite_bloc.dart';
 import 'package:ty_cafe/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:ty_cafe/features/orders/data/repositories/orders_repository_impl.dart';
+import 'package:ty_cafe/features/orders/presentation/cubit/orders_cubit.dart';
 import 'package:ty_cafe/features/profile/data/repositories/profile_repository.dart';
 import 'package:ty_cafe/features/profile/presentation/bloc/profile_bloc.dart';
 
@@ -16,9 +18,17 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // على الويب، يمكن أن نستمر بدون Firebase إذا لم يكن مُعداً
+    debugPrint('Firebase initialization error: $e');
+    if (!kIsWeb) {
+      rethrow;
+    }
+  }
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -61,6 +71,9 @@ class MyApp extends StatelessWidget {
           BlocProvider<ProfileBloc>(
             create: (_) =>
                 ProfileBloc(repository: profileRepo)..add(ProfileLoadRequested()),
+          ),
+          BlocProvider<OrdersCubit>(
+            create: (_) => OrdersCubit(repository: ordersRepo)..loadOrders(),
           ),
         ],
         child: MaterialApp(

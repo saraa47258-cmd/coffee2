@@ -8,6 +8,7 @@ import 'package:ty_cafe/features/home/data/models/product_model.dart';
 import 'package:ty_cafe/features/home/presentation/pages/all_products_page.dart';
 import 'package:ty_cafe/features/home/presentation/widgets/product_card.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -300,69 +301,75 @@ class _HomePageState extends State<HomePage>
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  _buildEnterAnimation(
-                    child: _buildAppBar(),
-                    anim: _appBarAnim,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: Responsive.padding(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: Responsive.spacing(context, 10)),
+                      _buildEnterAnimation(
+                        child: _buildAppBar(context),
+                        anim: _appBarAnim,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, 25)),
+                      _buildEnterAnimation(
+                        child: _buildPromoBanner(context),
+                        anim: _bannerAnim,
+                        startOffset: 10,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, 25)),
+                      _buildEnterAnimation(
+                        child: _buildCategories(context),
+                        anim: _categoriesAnim,
+                      ),
+                      SizedBox(height: Responsive.spacing(context, 25)),
+                      _buildProductGrid(context),
+                      SizedBox(height: Responsive.spacing(context, 20)),
+                    ],
                   ),
-                  const SizedBox(height: 25),
-                  _buildEnterAnimation(
-                    child: _buildPromoBanner(),
-                    anim: _bannerAnim,
-                    startOffset: 10,
-                  ),
-                  const SizedBox(height: 25),
-                  _buildEnterAnimation(
-                    child: _buildCategories(),
-                    anim: _categoriesAnim,
-                  ),
-                  const SizedBox(height: 25),
-                  _buildProductGrid(),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BuildContext context) {
+    final avatarSize = Responsive.isMobile(context) ? 25.0 : 30.0;
+    final iconSize = Responsive.iconSize(context, 28);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: AssetImage('assets/images/profile.jpg'),
+            CircleAvatar(
+              radius: avatarSize,
+              backgroundImage: const AssetImage('assets/images/profile.jpg'),
             ),
-            const SizedBox(width: 15),
+            SizedBox(width: Responsive.spacing(context, 15)),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   "Fluty",
                   style: TextStyle(
                     fontFamily: 'PlayfairDisplay',
-                    fontSize: 20,
+                    fontSize: Responsive.fontSize(context, 20),
                     fontWeight: FontWeight.bold,
                     color: AppColors.darkText,
                   ),
                 ),
-                SizedBox(height: 2),
+                SizedBox(height: Responsive.spacing(context, 2)),
                 Text(
                   "Good Morning 👋",
                   style: TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 14,
+                    fontSize: Responsive.fontSize(context, 14),
                     color: AppColors.subtleText,
                   ),
                 ),
@@ -371,7 +378,7 @@ class _HomePageState extends State<HomePage>
           ],
         ),
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(Responsive.spacing(context, 8)),
           decoration: BoxDecoration(
             color: AppColors.whiteBackground,
             shape: BoxShape.circle,
@@ -383,19 +390,19 @@ class _HomePageState extends State<HomePage>
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.notifications_outlined,
             color: AppColors.darkText,
-            size: 28,
+            size: iconSize,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPromoBanner() {
+  Widget _buildPromoBanner(BuildContext context) {
     return SizedBox(
-      height: 180,
+      height: Responsive.bannerHeight(context),
       child: Stack(
         children: [
           PageView.builder(
@@ -439,9 +446,9 @@ class _HomePageState extends State<HomePage>
                             const SizedBox(height: 5),
                             Text(
                               item['titleBig'] ?? '',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'PlayfairDisplay',
-                                fontSize: 24,
+                                fontSize: Responsive.fontSize(context, 24),
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.darkText,
                               ),
@@ -555,7 +562,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildCategories() {
+  Widget _buildCategories(BuildContext context) {
     return Column(
       children: [
         Row(
@@ -565,7 +572,7 @@ class _HomePageState extends State<HomePage>
               "Categories",
               style: TextStyle(
                 fontFamily: 'PlayfairDisplay',
-                fontSize: 22,
+                fontSize: Responsive.fontSize(context, 22),
                 fontWeight: FontWeight.bold,
                 color: AppColors.darkText,
               ),
@@ -593,9 +600,9 @@ class _HomePageState extends State<HomePage>
             ),
           ],
         ),
-        const SizedBox(height: 15),
+        SizedBox(height: Responsive.spacing(context, 15)),
         SizedBox(
-          height: 45,
+          height: Responsive.categoryHeight(context),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _categories.length,
@@ -672,8 +679,10 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildProductGrid() {
+  Widget _buildProductGrid(BuildContext context) {
     final products = _filteredProducts;
+    final crossAxisCount = Responsive.gridColumns(context);
+    final spacing = Responsive.spacing(context, 15);
 
     return FadeTransition(
       opacity: _productsAnim,
@@ -689,11 +698,11 @@ class _HomePageState extends State<HomePage>
           itemCount: products.length,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 15,
-            mainAxisSpacing: 15,
-            childAspectRatio: 0.7,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: Responsive.cardAspectRatio(context),
           ),
           itemBuilder: (context, index) {
             final double baseStart = (index * 0.08);

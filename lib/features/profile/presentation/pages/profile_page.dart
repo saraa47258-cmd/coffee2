@@ -9,6 +9,7 @@ import 'package:ty_cafe/features/favorite/presentation/bloc/favorite_bloc.dart';
 import 'package:ty_cafe/features/orders/presentation/pages/orders_page.dart';
 import 'package:ty_cafe/features/profile/presentation/bloc/profile_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../domain/entities/profile.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -187,12 +188,14 @@ class _ProfilePageState extends State<ProfilePage>
             ).showSnackBar(SnackBar(content: Text(state.error!)));
           }
         },
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              physics: const BouncingScrollPhysics(),
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: Responsive.padding(context),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
                 children: [
                   Container(
                     width: double.infinity,
@@ -539,7 +542,9 @@ class _ProfilePageState extends State<ProfilePage>
                 ),
               ),
             ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

@@ -85,7 +85,11 @@ class AppBottomNavigation extends StatelessWidget {
             activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
-
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.store_outlined),
+            activeIcon: Icon(Icons.store),
+            label: 'المتجر',
+          ),
           BottomNavigationBarItem(
             icon: _cartIconWithBadge(context, active: false),
             activeIcon: _cartIconWithBadge(context, active: true),

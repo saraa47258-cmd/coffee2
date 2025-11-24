@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ty_cafe/features/cart/presentation/bloc/cart_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 import '../widgets/cart_item_tile.dart';
 import 'checkout_page.dart';
 
@@ -32,8 +33,13 @@ class CartPage extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: Responsive.spacing(context, 20),
+              vertical: Responsive.spacing(context, 12),
+            ),
         child: BlocBuilder<CartBloc, CartState>(
           builder: (context, state) {
             final items = state.items;
@@ -148,6 +154,8 @@ class CartPage extends StatelessWidget {
             );
           },
         ),
+          );
+        },
       ),
     );
   }

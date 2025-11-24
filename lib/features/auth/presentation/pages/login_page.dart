@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ty_cafe/features/auth/presentation/pages/forgot_passworde_page.dart';
 import 'package:ty_cafe/features/auth/presentation/pages/register_page.dart';
 import 'package:ty_cafe/features/auth/presentation/bloc/auth_bloc.dart';
@@ -21,6 +22,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
+  bool _rememberMe = false;
   late TapGestureRecognizer _termsRecognizer;
 
   @override
@@ -30,6 +32,42 @@ class _LoginPageState extends State<LoginPage> {
       ..onTap = () {
         _showTermsModal(context);
       };
+    // Load saved credentials after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSavedCredentials();
+    });
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('saved_email');
+      final rememberMe = prefs.getBool('remember_me') ?? false;
+      
+      if (mounted && savedEmail != null && rememberMe) {
+        setState(() {
+          _emailController.text = savedEmail;
+          _rememberMe = true;
+        });
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+
+  Future<void> _saveCredentials(String email) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_rememberMe) {
+        await prefs.setString('saved_email', email);
+        await prefs.setBool('remember_me', true);
+      } else {
+        await prefs.remove('saved_email');
+        await prefs.setBool('remember_me', false);
+      }
+    } catch (e) {
+      // Ignore errors
+    }
   }
 
   @override
@@ -474,31 +512,83 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ForgotPasswordPage(),
+                    
+                    // Remember Me Checkbox and Forgot Password
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: _rememberMe,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _rememberMe = value ?? false;
+                                  });
+                                },
+                                activeColor: Color.lerp(
+                                  AppColors.primaryColor,
+                                  Colors.orange,
+                                  0.6,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                              ),
                             ),
-                          );
-                        },
-                        child: Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: Color.lerp(
-                              AppColors.primaryColor,
-                              Colors.orange,
-                              0.6,
-                            )!,
-                            fontWeight: FontWeight.w600,
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _rememberMe = !_rememberMe;
+                                });
+                              },
+                              child: Text(
+                                'تذكرني',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  color: AppColors.darkText,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ForgotPasswordPage(),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14,
+                              color: Color.lerp(
+                                AppColors.primaryColor,
+                                Colors.orange,
+                                0.6,
+                              )!,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 20),
 
@@ -512,9 +602,11 @@ class _LoginPageState extends State<LoginPage> {
                                 ? null
                                 : () {
                                     if (_formKey.currentState!.validate()) {
+                                      final email = _emailController.text.trim();
+                                      _saveCredentials(email);
                                       context.read<AuthBloc>().add(
                                         AuthLoginRequested(
-                                          email: _emailController.text.trim(),
+                                          email: email,
                                           password: _passwordController.text,
                                         ),
                                       );

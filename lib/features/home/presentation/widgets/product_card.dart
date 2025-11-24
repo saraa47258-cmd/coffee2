@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ty_cafe/features/favorite/presentation/bloc/favorite_bloc.dart';
 import 'package:ty_cafe/features/home/data/models/product_model.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 import '../pages/product_detail_page.dart';
 
 class ProductCard extends StatelessWidget {
@@ -23,6 +24,10 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageHeight = Responsive.isMobile(context) ? 150.0 : 180.0;
+    final margin = Responsive.spacing(context, 10);
+    final padding = Responsive.spacing(context, 15);
+    
     return Container(
       decoration: BoxDecoration(
         color: AppColors.whiteBackground,
@@ -41,8 +46,8 @@ class ProductCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 150,
-                margin: const EdgeInsets.all(10),
+                height: imageHeight,
+                margin: EdgeInsets.all(margin),
                 decoration: BoxDecoration(
                   color: AppColors.subtleText.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(15),
@@ -55,7 +60,7 @@ class ProductCard extends StatelessWidget {
                           child: Image.asset(
                             product.image,
                             width: double.infinity,
-                            height: 150,
+                            height: imageHeight,
                             fit: BoxFit.cover,
                             errorBuilder: (c, e, s) => Image.asset(
                               'assets/images/coffe.webp',
@@ -66,7 +71,7 @@ class ProductCard extends StatelessWidget {
                       : Image.asset(
                           product.image,
                           width: double.infinity,
-                          height: 150,
+                          height: imageHeight,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => Image.asset(
                             'assets/images/coffe.webp',
@@ -77,22 +82,22 @@ class ProductCard extends StatelessWidget {
               ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                padding: EdgeInsets.symmetric(horizontal: padding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       product.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'PlayfairDisplay',
-                        fontSize: 18,
+                        fontSize: Responsive.fontSize(context, 18),
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkText,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: Responsive.spacing(context, 10)),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -101,9 +106,9 @@ class ProductCard extends StatelessWidget {
                           children: [
                             Text(
                               product.price,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 16,
+                                fontSize: Responsive.fontSize(context, 16),
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.darkText,
                               ),
@@ -111,9 +116,9 @@ class ProductCard extends StatelessWidget {
                             if (product.originalPrice.isNotEmpty)
                               Text(
                                 product.originalPrice,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'Poppins',
-                                  fontSize: 12,
+                                  fontSize: Responsive.fontSize(context, 12),
                                   color: AppColors.subtleText,
                                   decoration: TextDecoration.lineThrough,
                                 ),
@@ -134,7 +139,7 @@ class ProductCard extends StatelessWidget {
                                 );
                               },
                           child: Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: EdgeInsets.all(Responsive.spacing(context, 6)),
                             decoration: BoxDecoration(
                               color: Color.lerp(
                                 AppColors.primaryColor,
@@ -143,10 +148,10 @@ class ProductCard extends StatelessWidget {
                               )!,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.arrow_forward,
                               color: AppColors.whiteText,
-                              size: 16,
+                              size: Responsive.iconSize(context, 16),
                             ),
                           ),
                         ),

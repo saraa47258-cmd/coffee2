@@ -28,3 +28,6 @@ class AnalyticsState extends Equatable {
   List<Object?> get props => [analyticsData, loading, error];
 }
 
+
+
+
